@@ -269,3 +269,27 @@ paddle_wheel(spoke_radius=40, spoke_thickness=3, wheel_thickness=30, hub_radius=
 translate([-120, 0, 0])
 rotate([0, -90, 0])
 paddle_wheel(spoke_radius=40, spoke_thickness=3, wheel_thickness=30, hub_radius=10, tread_thickness=10, tread_outer_diameter=85, tread_inner_diameter=79);
+
+translate([0, 0, hull_height/2])
+translate([0, 0, 30])
+union()
+{
+    hull()
+    {
+        intersection()
+        {
+            hull()
+            {
+                translate([-hull_separation/2, 0, 0])
+                catamaran_hull_v1(hull_width_tip, hull_width_max, hull_length, hull_height, hull_wall_thickness, visualize=false, left=true);
+
+                translate([hull_separation/2, 0, 0])
+                catamaran_hull_v1(hull_width_tip, hull_width_max, hull_length, hull_height, hull_wall_thickness, visualize=true, right=true);
+            }
+            cube([1000, 150, hull_height], center=true);
+        }
+        
+        translate([0, 0, 50])
+        roundedcube([150, 100, 1], center=true);
+    }
+}
