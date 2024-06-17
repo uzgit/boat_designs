@@ -51,4 +51,4 @@ width_squareness = 2.4;
 height = 100;
 vertical_inflection_point = 0.5;
 
-//catamaran_hull(length, max_width, squareness, height, vertical_inflection_point, length_squareness, width_squareness);
+catamaran_hull(length, max_width, squareness, height, vertical_inflection_point, length_squareness, width_squareness);
