@@ -5,6 +5,8 @@ $fn = 120;
 hull_beam = 100;
 hull_depth = 200;
 hull_midship_longitude = 200;
+hull_bow_longitude = 150;
+hull_bow_stem_curvature_radius = 10;
 
 curving_radius = 30;
 hull_thickness = 1;
@@ -105,4 +107,127 @@ module hull_midship(size, num_ribs, num_runners_x, num_runners_y)
     }
 }
 
-hull_midship([hull_beam, hull_depth, hull_midship_longitude], hull_midship_ribs, hull_midship_runners_x, hull_midship_runners_y);
+//module hull_bow(size)
+//{
+//    linear_extrude(global_end_rib_longitude)
+//    hull_midship_cross_section(size, thickness=global_rib_thickness);
+//    
+//    translate([0, 0, size[2] - hull_bow_stem_curvature_radius])
+//    for( scalar = [-1, 1] )
+//    {
+//        translate([0, scalar * (size[1]/2 - hull_bow_stem_curvature_radius), 0])
+//        sphere(r=hull_bow_stem_curvature_radius);
+//    }
+//}
+
+function interpolate(x, x_min, x_max, y_min, y_max) =
+    y_min + (x - x_min) * (y_max - y_min) / (x_max - x_min);
+
+module hull_bow_shell(size, longitudinal_steps=50)
+{
+    difference()
+    {
+        hull()
+        {
+            for( i = [1 : longitudinal_steps] )
+            {
+                curvature_radius = interpolate(i, 0, longitudinal_steps, curving_radius, hull_bow_stem_curvature_radius);
+                x_translation = (size[0]/2 - curvature_radius) * abs((1 - i / longitudinal_steps)^0.75);
+                z_translation = (size[2] - curvature_radius) * i / longitudinal_steps;
+                
+                translate([0, 0, z_translation])
+                for( scalar_x = [-1, 1] )
+                translate([scalar_x * x_translation, 0, 0])
+                for( scalar_y = [-1, 1] )
+                {
+                    translate([0, scalar_y * (size[1]/2 - curvature_radius), 0])
+                    sphere(r=curvature_radius);
+                }
+            }
+            
+            local_thickness = 1;
+            translate([0, 0, -local_thickness])
+            linear_extrude(local_thickness)
+            hull_midship_cross_section(size, thickness=local_thickness);
+        }
+        
+        local_size = 1000;
+        translate([0, 0, -local_size/2])
+        cube([local_size, local_size, local_size], center=true);
+    }
+}
+
+module hull_bow(size, thickness=hull_thickness, longitudinal_steps=100)
+{
+    // shell
+    difference()
+    {
+        hull_bow_shell([hull_beam, hull_depth, hull_bow_longitude], longitudinal_steps);
+        hull_bow_shell([hull_beam - 2*hull_thickness, hull_depth - 2*hull_thickness, hull_bow_longitude - hull_thickness], longitudinal_steps);
+    }
+    
+    // ribs
+    difference()
+    {
+        difference()
+        {
+            hull_bow_shell([hull_beam - hull_thickness, hull_depth - hull_thickness, hull_bow_longitude - hull_thickness], longitudinal_steps);
+            hull_bow_shell([hull_beam - 2*global_rib_thickness, hull_depth - 2*global_rib_thickness, hull_bow_longitude - hull_thickness], longitudinal_steps);
+        }
+        difference()
+        {
+            local_size = 1000;
+            union()
+            {
+                cube([local_size, local_size, local_size], center=true);
+            }
+            union()
+            {
+                // end rib
+                translate([0, 0, global_end_rib_longitude/2])
+                cube([local_size, local_size, global_end_rib_longitude], center=true);
+                
+                // intermediate rib
+                translate([0, 0, hull_bow_longitude/2])
+                cube([local_size, local_size, global_rib_longitude], center=true);
+                
+                // runner x
+                translate([0, 0, hull_bow_longitude/2])
+                cube([global_rib_longitude, hull_depth, hull_bow_longitude], center=true);
+                // runners y
+                translate([0, 0, hull_bow_longitude/2])
+                for( i = [ 1 : hull_midship_runners_y ] )
+                {
+                    y_translation = size[1]/(hull_midship_runners_y + 1) * i - hull_depth/2;
+                    translate([0, y_translation, 0])
+                    cube([hull_beam, global_rib_longitude, hull_bow_longitude], center=true);
+                }
+            }
+        }
+    }
+    
+    // bow reinforcement
+    difference()
+    {
+        hull_bow_shell([hull_beam - hull_thickness, hull_depth - hull_thickness, hull_bow_longitude - hull_thickness], longitudinal_steps);
+        difference()
+        {
+            local_size = 1000;
+            cube([local_size, local_size, local_size], center=true);
+            
+            difference()
+            {
+                translate([0, 0, hull_bow_longitude])
+                cube([local_size, local_size, 40], center=true);
+            }
+        }
+    }
+}
+
+hull_bow([hull_beam, hull_depth, hull_bow_longitude]);
+
+//translate([0, 0, -hull_midship_longitude - 10])
+//hull_midship([hull_beam, hull_depth, hull_midship_longitude], hull_midship_ribs, hull_midship_runners_x, hull_midship_runners_y);
+//
+//translate([0, 0, -2*hull_midship_longitude - 20])
+//hull_midship([hull_beam, hull_depth, hull_midship_longitude], hull_midship_ribs, hull_midship_runners_x, hull_midship_runners_y);
