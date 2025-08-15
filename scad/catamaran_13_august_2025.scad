@@ -1,10 +1,10 @@
 include <../library/roundedcube.scad>
 
-$fn = 120;
+$fn = 20;
 
 hull_beam = 100;
-hull_depth = 200;
-hull_midship_longitude = 200;
+hull_depth = 150;
+hull_midship_longitude = 300;
 hull_bow_longitude = 150;
 hull_bow_stem_curvature_radius = 10;
 
@@ -140,7 +140,8 @@ module hull_bow_shell(size, longitudinal_steps=50)
                 translate([scalar_x * x_translation, 0, 0])
                 for( scalar_y = [-1, 1] )
                 {
-                    translate([0, scalar_y * (size[1]/2 - curvature_radius), 0])
+                    y_translation = scalar_y * (size[1]/2 - curving_radius * (1 + abs((i / longitudinal_steps)^5)));
+                    translate([0, y_translation, 0])
                     sphere(r=curvature_radius);
                 }
             }
@@ -224,10 +225,19 @@ module hull_bow(size, thickness=hull_thickness, longitudinal_steps=100)
     }
 }
 
+rotate([-90, 0, 0])
+translate([0, 0, -hull_bow_longitude])
 hull_bow([hull_beam, hull_depth, hull_bow_longitude]);
 
-//translate([0, 0, -hull_midship_longitude - 10])
-//hull_midship([hull_beam, hull_depth, hull_midship_longitude], hull_midship_ribs, hull_midship_runners_x, hull_midship_runners_y);
-//
-//translate([0, 0, -2*hull_midship_longitude - 20])
-//hull_midship([hull_beam, hull_depth, hull_midship_longitude], hull_midship_ribs, hull_midship_runners_x, hull_midship_runners_y);
+rotate([-90, 0, 0])
+translate([0, 0, -hull_bow_longitude - hull_midship_longitude - 0])
+hull_midship([hull_beam, hull_depth, hull_midship_longitude], hull_midship_ribs, hull_midship_runners_x, hull_midship_runners_y);
+
+rotate([-90, 0, 0])
+translate([0, 0, -hull_bow_longitude - 2*hull_midship_longitude - 0])
+hull_midship([hull_beam, hull_depth, hull_midship_longitude], hull_midship_ribs, hull_midship_runners_x, hull_midship_runners_y);
+
+rotate([-90, 0, 0])
+translate([0, 0, -hull_bow_longitude - 2*hull_midship_longitude - 0])
+rotate([180, 0, 0])
+hull_bow([hull_beam, hull_depth, hull_bow_longitude]);
